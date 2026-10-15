@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEO ブロック崩し (Block Breaker)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #090d16;
+      color: #e2e8f0;
+      font-family: 'Noto Sans JP', 'Chakra Petch', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+    .font-game {
+      font-family: 'Chakra Petch', monospace, sans-serif;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #06b6d4, #2563eb);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+      font-size: 16px;
+    }
+    .brand-title {
+      font-size: 19px;
+      font-weight: 900;
+      background: linear-gradient(to right, #ffffff, #a5f3fc, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+    }
+    .brand-sub {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .header-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+    }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .btn-outline {
+      background: #0f172a;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      color: #22d3ee;
+    }
+    .btn-outline:hover {
+      border-color: #22d3ee;
+      background: #1e293b;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #2563eb);
+      color: #020617;
+      font-weight: 700;
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+    }
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+    .btn-icon {
+      padding: 6px;
+      background: transparent;
+      color: #94a3b8;
+      border-radius: 6px;
+    }
+    .btn-icon:hover {
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    .hud {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      backdrop-filter: blur(8px);
+    }
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+    }
+    .hud-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .hud-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .hud-lives {
+      display: flex;
+      gap: 4px;
+    }
+    .heart-icon {
+      font-size: 15px;
+      color: #f43f5e;
+      text-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+      transition: all 0.2s;
+    }
+    .heart-lost {
+      color: #334155;
+      text-shadow: none;
+      opacity: 0.4;
+    }
+    .combo-badge {
+      font-size: 13px;
+      font-weight: 900;
+      color: #34d399;
+      display: none;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 800 / 650;
+      background: #020617;
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    .menu-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 520px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .menu-hero-title {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      margin-bottom: 8px;
+      text-shadow: 0 0 25px rgba(6, 182, 212, 0.5);
+    }
+    .menu-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      max-width: 440px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 460px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      position: relative;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+      margin: 16px 0;
+      text-align: left;
+    }
+    .stage-item {
+      padding: 10px;
+      border-radius: 8px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .stage-item:hover {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.08);
+    }
+    footer {
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: #475569;
+    }
+  </style>
+<script src="/_aistudio-iframe.js?v=6634132a"></script></head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <div class="brand-title font-game">NEO ブロック崩し</div>
+          <div class="brand-sub">STANDALONE SINGLE-FILE EDITION</div>
+        </div>
+      </div>
+      <div class="header-btns">
+        <button id="btn-back-menu" class="btn btn-outline" style="display: none;">タイトル</button>
+        <button id="btn-open-help" class="btn btn-outline">遊び方</button>
+      </div>
+    </header>
+
+    <!-- MENU SCREEN -->
+    <div id="screen-menu" class="menu-screen">
+      <div style="font-size: 12px; color: #22d3ee; font-weight: 700; margin-bottom: 8px; background: rgba(6,182,212,0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(6,182,212,0.3);">
+        ✦ 次世代アーケードアクション
+      </div>
+      <h1 class="menu-hero-title font-game">NEO BREAKOUT</h1>
+      <p class="menu-desc">
+        連鎖爆発、レーザー砲、3連マルチボール、貫通ファイヤー！<br>
+        全8ステージの個性豊かなギミックブロックを打ち破れ。
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 260px; margin-bottom: 24px;">
+        <button id="btn-game-start" class="btn btn-primary font-game" style="padding: 14px 20px; font-size: 15px;">
+          ▶ GAME START
+        </button>
+        <button id="btn-stage-select-menu" class="btn btn-outline" style="padding: 10px;">
+          ステージ選択
+        </button>
+      </div>
+
+      <div style="font-size: 12px; color: #94a3b8; display: flex; gap: 16px; background: #020617; padding: 8px 16px; border-radius: 10px; border: 1px solid #1e293b;">
+        <span>HIGH SCORE: <strong id="menu-highscore" class="font-game" style="color: #fbbf24;">0</strong></span>
+        <span>·</span>
+        <span>全8ステージ搭載</span>
+      </div>
+    </div>
+
+    <!-- GAMEPLAY SCREEN -->
+    <div id="screen-game" style="display: none; flex-direction: column;">
+      <!-- HUD -->
+      <div class="hud">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="hud-stage-btn" class="btn btn-outline font-game" style="font-size: 13px; font-weight: 700; color: #06b6d4;">
+            STAGE 1
+          </button>
+          <div id="hud-stage-title" style="font-size: 12px; color: #94a3b8; font-weight: 500;">ネオン・ゲートウェイ</div>
+        </div>
+
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <div class="hud-stat" style="text-align: right;">
+            <span class="hud-label font-game">Score</span>
+            <span id="hud-score" class="hud-value font-game">0</span>
+          </div>
+          <div class="hud-stat" style="text-align: right; border-left: 1px solid #334155; padding-left: 12px;">
+            <span class="hud-label font-game" style="color: #fbbf24;">High</span>
+            <span id="hud-high" class="hud-value font-game" style="color: #fde047; font-size: 15px;">0</span>
+          </div>
+        </div>
+
+        <div id="hud-combo" class="combo-badge font-game">COMBO x2</div>
+
+        <div class="hud-lives" id="hud-lives-container">
+          <span class="heart-icon">♥</span>
+          <span class="heart-icon">♥</span>
+          <span class="heart-icon">♥</span>
+        </div>
+
+        <div style="display: flex; gap: 4px;">
+          <button id="btn-pause" class="btn btn-icon" title="一時停止 (P)">⏸</button>
+          <button id="btn-sound" class="btn btn-icon" title="音量切替 (M)">🔊</button>
+          <button id="btn-restart" class="btn btn-icon" title="リトライ (R)">🔄</button>
+        </div>
+      </div>
+
+      <!-- CANVAS -->
+      <div class="canvas-wrapper">
+        <canvas id="gameCanvas" width="800" height="650"></canvas>
+      </div>
+
+      <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #64748b;">
+        操作: マウス/タッチ または 左右キー [← →] | 発射/レーザー: クリック または Space
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <!-- PAUSE -->
+    <div id="modal-pause" class="modal-box" style="display: none;">
+      <h2 class="modal-title font-game" style="color: #22d3ee;">PAUSED</h2>
+      <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">一時停止しています</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button id="btn-resume" class="btn btn-primary font-game" style="padding: 12px;">再開する</button>
+        <button id="btn-pause-restart" class="btn btn-outline" style="padding: 10px;">やり直す</button>
+      </div>
+    </div>
+
+    <!-- STAGE CLEAR -->
+    <div id="modal-clear" class="modal-box" style="display: none; border-color: rgba(52, 211, 153, 0.4);">
+      <div style="font-size: 32px; margin-bottom: 6px;">🏆</div>
+      <h2 class="modal-title font-game" style="color: #34d399;">STAGE CLEAR!</h2>
+      <p id="clear-desc" style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">ステージクリア！</p>
+
+      <div style="background: #020617; padding: 12px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left;">
+        <div>
+          <span style="font-size: 9px; color: #64748b; text-transform: uppercase;">Score</span>
+          <div id="clear-score" class="font-game" style="font-size: 16px; font-weight: 700; color: #fff;">0</div>
+        </div>
+        <div>
+          <span style="font-size: 9px; color: #64748b; text-transform: uppercase;">Max Combo</span>
+          <div id="clear-combo" class="font-game" style="font-size: 16px; font-weight: 700; color: #34d399;">x1</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="btn-next-stage" class="btn btn-primary font-game" style="padding: 12px;">次のステージへ ▶</button>
+        <button id="btn-clear-retry" class="btn btn-outline" style="padding: 8px;">このステージをもう一度</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="modal-over" class="modal-box" style="display: none; border-color: rgba(244, 63, 94, 0.4);">
+      <h2 class="modal-title font-game" style="color: #f43f5e;">GAME OVER</h2>
+      <p style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">ライフがなくなりました</p>
+
+      <div style="background: #020617; padding: 12px; border-radius: 10px; border: 1px solid #1e293b; margin-bottom: 16px;">
+        <div style="font-size: 10px; color: #64748b;">FINAL SCORE</div>
+        <div id="over-score" class="font-game" style="font-size: 24px; font-weight: 900; color: #fff; margin: 4px 0;">0</div>
+        <div style="font-size: 12px; color: #fbbf24;">HIGH: <span id="over-high" class="font-game">0</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="btn-over-retry" class="btn btn-primary font-game" style="padding: 12px; background: linear-gradient(135deg, #f43f5e, #e11d48);">リトライ 🔄</button>
+        <button id="btn-over-menu" class="btn btn-outline" style="padding: 8px;">タイトルへ戻る</button>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div id="modal-help" class="modal-box" style="display: none; max-width: 500px; text-align: left;">
+      <h2 class="modal-title font-game" style="color: #22d3ee; margin-bottom: 4px;">遊び方 & アイテム</h2>
+      <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">ボールを跳ね返して全てのブロックを破壊しましょう。</p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px;">
+        <div style="background: #020617; padding: 10px; border-radius: 8px; border: 1px solid #1e293b;">
+          <strong style="color: #38bdf8;">操作方法:</strong><br>
+          ・マウス/タッチ または [← →] / [A D] でパドル移動<br>
+          ・クリック または [Space] でボール発射 & レーザー発射<br>
+          ・[P] 一時停止 / [M] 消音 / [R] リトライ
+        </div>
+
+        <div style="background: #020617; padding: 10px; border-radius: 8px; border: 1px solid #1e293b;">
+          <strong style="color: #38bdf8;">角度制御:</strong><br>
+          パドルの中心で受けると直上に、両端で受けると鋭い角度で斜めに反射します！
+        </div>
+
+        <div style="background: #020617; padding: 10px; border-radius: 8px; border: 1px solid #1e293b;">
+          <strong style="color: #38bdf8;">パワーアップ:</strong><br>
+          ・<strong>+3 BALL</strong>: ボール分裂<br>
+          ・<strong>LASER</strong>: 2連レーザー砲連射<br>
+          ・<strong>EXPAND</strong>: パドル幅拡大<br>
+          ・<strong>FIRE</strong>: 通常ブロック貫通火の玉<br>
+          ・<strong>SHIELD</strong>: 底面セーフティネット
+        </div>
+      </div>
+
+      <button id="btn-close-help" class="btn btn-outline" style="width: 100%; margin-top: 14px; padding: 8px;">閉じる</button>
+    </div>
+
+    <!-- STAGE SELECT -->
+    <div id="modal-stage" class="modal-box" style="display: none; max-width: 500px;">
+      <h2 class="modal-title font-game" style="color: #22d3ee; margin-bottom: 4px;">ステージ選択</h2>
+      <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">プレイするステージを選んでください</p>
+      <div id="stage-list" class="stage-grid"></div>
+      <button id="btn-close-stage" class="btn btn-outline" style="width: 100%; padding: 8px;">閉じる</button>
+    </div>
+  </div>
+
+  <footer>
+    NEO ブロック崩し © 2026 · Standalone Single-File Edition
+  </footer>
+
+  <script>
+    // --- 1. AUDIO SYNTHESIZER ---
+    class SoundController {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+        try {
+          const m = localStorage.getItem('neo_breakout_muted');
+          if (m !== null) this.isMuted = m === 'true';
+        } catch(e) {}
+      }
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        try { localStorage.setItem('neo_breakout_muted', String(this.isMuted)); } catch(e) {}
+        return this.isMuted;
+      }
+      playPaddleHit(offset = 0) {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const baseFreq = 320 + Math.abs(offset) * 140;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        } catch(e) {}
+      }
+      playWallHit() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.05);
+        } catch(e) {}
+      }
+      playBlockHit(combo = 1) {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
+        const freq = notes[Math.min(notes.length - 1, Math.max(0, combo - 1))];
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.28, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e) {}
+      }
+      playBlockDestroy() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const bufferSize = this.ctx.sampleRate * 0.05;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1600, this.ctx.currentTime);
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start();
+          noise.stop(this.ctx.currentTime + 0.05);
+        } catch(e) {}
+      }
+      playBomb() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.4);
+        } catch(e) {}
+      }
+      playPowerUp() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.05);
+            gain.gain.setValueAtTime(0, this.ctx.currentTime + idx * 0.05);
+            gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + idx * 0.05 + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.05 + 0.1);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(this.ctx.currentTime + idx * 0.05);
+            osc.stop(this.ctx.currentTime + idx * 0.05 + 0.1);
+          });
+        } catch(e) {}
+      }
+      playLaser() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch(e) {}
+      }
+      playShield() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e) {}
+      }
+      playClear() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, this.ctx.currentTime + idx * 0.1);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.1);
+          osc.stop(this.ctx.currentTime + idx * 0.1 + 0.2);
+        });
+      }
+      playOver() {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [392.00, 369.99, 349.23, 311.13];
+        notes.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, this.ctx.currentTime + idx * 0.18);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.18 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.18);
+          osc.stop(this.ctx.currentTime + idx * 0.18 + 0.2);
+        });
+      }
+    }
+    const sound = new SoundController();
+
+    // --- 2. STAGES CONFIGURATION ---
+    const LEVELS = [
+      {
+        id: 1, name: "STAGE 1", subTitle: "ネオン・ゲートウェイ", color: "#06b6d4", speed: 6.5,
+        layout: [
+          "............",
+          "..RRRRRRRR..",
+          "..OOOOOOOO..",
+          "..YYYYYYYY..",
+          "..GGGGGGGG..",
+          "..1.CCCC.2..",
+          "..BBBBBBBB..",
+          "............"
+        ]
+      },
+      {
+        id: 2, name: "STAGE 2", subTitle: "インベーダー・ストライク", color: "#10b981", speed: 7.0,
+        layout: [
+          "..G......G..",
+          "...G....G...",
+          "..GGGGGGGG..",
+          ".GG.GGGG.GG.",
+          ".GGGGGGGGGG.",
+          ".G.GG..GG.G.",
+          ".G.G....G.G.",
+          "...E.31.E..."
+        ]
+      },
+      {
+        id: 3, name: "STAGE 3", subTitle: "ダイヤモンド・ヴォールト", color: "#a855f7", speed: 7.2,
+        layout: [
+          ".....TT.....",
+          "....TYYT....",
+          "...TRRRRT...",
+          "..TOOPPOOT..",
+          ".TCC1??2CCT.",
+          "..TOOPPOOT..",
+          "...TRRRRT...",
+          "....TYYT....",
+          ".....TT....."
+        ]
+      },
+      {
+        id: 4, name: "STAGE 4", subTitle: "チェイン・リアクション", color: "#f43f5e", speed: 7.5,
+        layout: [
+          ".T.X.E..E.X.T.",
+          "R.E.R.RR.R.E.R",
+          ".X.T.X..X.T.X.",
+          "O.E.O.OO.O.E.O",
+          ".T.X.E..E.X.T.",
+          "Y.?.Y.13.Y.?.Y",
+          ".X.T.X..X.T.X."
+        ]
+      },
+      {
+        id: 5, name: "STAGE 5", subTitle: "レインボー・カスケード", color: "#eab308", speed: 7.8,
+        layout: [
+          "R.O.Y.G.C.B.P.R",
+          ".R.O.Y.G.C.B.P.",
+          "E.R.O.Y.G.C.B.E",
+          ".P.R.O.Y.G.C.B.",
+          "B.P.R.12.R.O.Y",
+          ".C.B.P.R.O.Y.G.",
+          "G.C.B.P.R.O.Y.G"
+        ]
+      },
+      {
+        id: 6, name: "STAGE 6", subTitle: "サイバー・フォートレス", color: "#3b82f6", speed: 8.0,
+        layout: [
+          "X.T.M.E.E.M.T.X",
+          "X.R.R.R.R.R.R.X",
+          "X.?.1.MM.2.?.X",
+          "X.C.C.C.C.C.C.X",
+          "X.B.B.33.B.B.X",
+          "X.P.P.P.P.P.P.X",
+          "..T.X.E.E.X.T.."
+        ]
+      },
+      {
+        id: 7, name: "STAGE 7", subTitle: "ラビリンス・コア", color: "#ec4899", speed: 8.2,
+        layout: [
+          "XXXXXXXXXXXXXX",
+          "X.RR.T.E.T.RR.X",
+          "X.X.MM.12.MM.X",
+          "X.O.X.TTTT.X.OX",
+          "X.Y.X.E??E.X.YX",
+          "X.G.XXXXXXXX.GX",
+          "X.C..........CX"
+        ]
+      },
+      {
+        id: 8, name: "STAGE 8", subTitle: "ネオ・オメガ・シタデル", color: "#f59e0b", speed: 8.5,
+        layout: [
+          ".M.M.E.132.E.M.M.",
+          "T.X.T.MMMM.T.X.T",
+          "R.R.R.????.R.R.R",
+          ".X.E.O.MM.O.E.X.",
+          "Y.Y.Y.GGGG.Y.Y.Y",
+          ".T.C.C.EE.C.C.T.",
+          "B.B.B.B..B.B.B.B",
+          ".X.P.P.12.P.P.X."
+        ]
+      }
+    ];
+
+    const BLOCK_COLORS = {
+      R: { fill: '#ef4444', border: '#f87171', points: 100 },
+      O: { fill: '#f97316', border: '#fb923c', points: 90 },
+      Y: { fill: '#eab308', border: '#fde047', points: 80 },
+      G: { fill: '#10b981', border: '#34d399', points: 70 },
+      C: { fill: '#06b6d4', border: '#22d3ee', points: 60 },
+      B: { fill: '#3b82f6', border: '#60a5fa', points: 50 },
+      P: { fill: '#a855f7', border: '#c084fc', points: 40 },
+      T: { fill: '#64748b', border: '#94a3b8', points: 200 },
+      M: { fill: '#475569', border: '#cbd5e1', points: 350 },
+      X: { fill: '#334155', border: '#64748b', points: 0 },
+      E: { fill: '#f43f5e', border: '#fda4af', points: 180 },
+      '?': { fill: '#ec4899', border: '#f472b6', points: 150 },
+      '1': { fill: '#8b5cf6', border: '#a78bfa', points: 120 },
+      '2': { fill: '#06b6d4', border: '#67e8f9', points: 120 },
+      '3': { fill: '#f59e0b', border: '#fcd34d', points: 120 }
+    };
+
+    // --- 3. GAME STATE & CONSTANTS ---
+    const VIRTUAL_WIDTH = 800;
+    const VIRTUAL_HEIGHT = 650;
+    const PADDLE_BASE_WIDTH = 110;
+    const PADDLE_HEIGHT = 16;
+    const BALL_RADIUS = 7;
+
+    let gameState = 'menu'; // menu, ready, playing, paused, stage_clear, game_over
+    let currentLevelIndex = 0;
+    let score = 0;
+    let highScore = 0;
+    try {
+      highScore = parseInt(localStorage.getItem('neo_breakout_highscore') || '0', 10);
+    } catch(e) {}
+    let lives = 3;
+    let combo = 0;
+    let maxCombo = 0;
+    let remainingBreakable = 0;
+
+    const paddle = {
+      x: VIRTUAL_WIDTH / 2 - PADDLE_BASE_WIDTH / 2,
+      y: VIRTUAL_HEIGHT - 38,
+      width: PADDLE_BASE_WIDTH,
+      height: PADDLE_HEIGHT,
+      targetX: VIRTUAL_WIDTH / 2 - PADDLE_BASE_WIDTH / 2,
+      speed: 12,
+      laserTimer: 0,
+      expandTimer: 0,
+      shieldActive: false,
+      lastLaserShot: 0
+    };
+
+    let balls = [];
+    let blocks = [];
+    let powerUps = [];
+    let lasers = [];
+    let particles = [];
+    let floatingTexts = [];
+    let screenShake = 0;
+
+    const keys = { left: false, right: false, fire: false };
+
+    // --- 4. DOM ELEMENTS ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const screenMenu = document.getElementById('screen-menu');
+    const screenGame = document.getElementById('screen-game');
+    const hudScore = document.getElementById('hud-score');
+    const hudHigh = document.getElementById('hud-high');
+    const hudStageBtn = document.getElementById('hud-stage-btn');
+    const hudStageTitle = document.getElementById('hud-stage-title');
+    const hudCombo = document.getElementById('hud-combo');
+    const hudLivesContainer = document.getElementById('hud-lives-container');
+    const menuHighscore = document.getElementById('menu-highscore');
+    menuHighscore.innerText = highScore.toLocaleString();
+    hudHigh.innerText = highScore.toLocaleString();
+
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const modalPause = document.getElementById('modal-pause');
+    const modalClear = document.getElementById('modal-clear');
+    const modalOver = document.getElementById('modal-over');
+    const modalHelp = document.getElementById('modal-help');
+    const modalStage = document.getElementById('modal-stage');
+    const stageList = document.getElementById('stage-list');
+
+    // Build stage select buttons
+    LEVELS.forEach((lvl, idx) => {
+      const item = document.createElement('div');
+      item.className = 'stage-item';
+      item.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:bold; color:#06b6d4; font-size:12px;">${lvl.name}</span>
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${lvl.color}"></span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-top:3px;">${lvl.subTitle}</div>
+      `;
+      item.onclick = () => {
+        hideModals();
+        startGame(idx);
+      };
+      stageList.appendChild(item);
+    });
+
+    // --- 5. GAME FUNCTIONS ---
+    function updateHUD() {
+      hudScore.innerText = score.toLocaleString();
+      if (score > highScore) {
+        highScore = score;
+        try { localStorage.setItem('neo_breakout_highscore', String(highScore)); } catch(e) {}
+      }
+      hudHigh.innerText = highScore.toLocaleString();
+      menuHighscore.innerText = highScore.toLocaleString();
+
+      const lvl = LEVELS[currentLevelIndex % LEVELS.length];
+      hudStageBtn.innerText = lvl.name;
+      hudStageTitle.innerText = lvl.subTitle;
+
+      if (combo > 1) {
+        hudCombo.style.display = 'block';
+        hudCombo.innerText = `COMBO x${combo}`;
+      } else {
+        hudCombo.style.display = 'none';
+      }
+
+      // Lives
+      let heartsHtml = '';
+      for (let i = 0; i < 5; i++) {
+        heartsHtml += `<span class="heart-icon ${i < lives ? '' : 'heart-lost'}">♥</span>`;
+      }
+      hudLivesContainer.innerHTML = heartsHtml;
+    }
+
+    function initLevel(levelIdx) {
+      currentLevelIndex = levelIdx;
+      const lvl = LEVELS[levelIdx % LEVELS.length];
+      const layout = lvl.layout;
+      const numRows = layout.length;
+      const numCols = Math.max(...layout.map(r => r.length));
+
+      const paddingX = 36;
+      const topMargin = 70;
+      const availableWidth = VIRTUAL_WIDTH - paddingX * 2;
+      const colSpacing = 6;
+      const rowSpacing = 6;
+      const blockWidth = Math.floor((availableWidth - (numCols - 1) * colSpacing) / numCols);
+      const blockHeight = Math.min(26, Math.max(18, Math.floor((VIRTUAL_HEIGHT * 0.42) / numRows)));
+      const totalGridWidth = numCols * blockWidth + (numCols - 1) * colSpacing;
+      const offsetX = paddingX + Math.floor((availableWidth - totalGridWidth) / 2);
+
+      blocks = [];
+      remainingBreakable = 0;
+
+      for (let r = 0; r < numRows; r++) {
+        const rowStr = layout[r];
+        for (let c = 0; c < rowStr.length; c++) {
+          const char = rowStr[c];
+          if (char === '.' || char === ' ') continue;
+
+          const x = offsetX + c * (blockWidth + colSpacing);
+          const y = topMargin + r * (blockHeight + rowSpacing);
+
+          let type = 'normal';
+          let hp = 1;
+          let powerUpType = null;
+
+          if (char === 'T') { type = 'tough'; hp = 2; }
+          else if (char === 'M') { type = 'tough'; hp = 3; }
+          else if (char === 'X') { type = 'iron'; hp = 999; }
+          else if (char === 'E') { type = 'bomb'; hp = 1; }
+          else if (char === '?') {
+            type = 'powerup';
+            const plist = ['multiball', 'laser', 'expand', 'slow', 'fireball', 'shield', 'life'];
+            powerUpType = plist[Math.floor(Math.random() * plist.length)];
+          }
+          else if (char === '1') { type = 'powerup'; powerUpType = 'multiball'; }
+          else if (char === '2') { type = 'powerup'; powerUpType = 'laser'; }
+          else if (char === '3') { type = 'powerup'; powerUpType = 'fireball'; }
+          else {
+            if (Math.random() < 0.12) {
+              const plist = ['multiball', 'laser', 'expand', 'slow', 'shield'];
+              powerUpType = plist[Math.floor(Math.random() * plist.length)];
+            }
+          }
+
+          if (type !== 'iron') remainingBreakable++;
+
+          const colData = BLOCK_COLORS[char] || BLOCK_COLORS['R'];
+          blocks.push({
+            id: `b_${r}_${c}`,
+            x, y, width: blockWidth, height: blockHeight,
+            type, hp, maxHp: hp,
+            color: colData.fill,
+            borderColor: colData.border,
+            points: colData.points,
+            powerUpType
+          });
+        }
+      }
+
+      powerUps = [];
+      lasers = [];
+      particles = [];
+      floatingTexts = [];
+      combo = 0;
+
+      paddle.laserTimer = 0;
+      paddle.expandTimer = 0;
+      paddle.width = PADDLE_BASE_WIDTH;
+      paddle.shieldActive = false;
+
+      resetBallToPaddle();
+      updateHUD();
+    }
+
+    function resetBallToPaddle() {
+      balls = [{
+        x: paddle.x + paddle.width / 2,
+        y: paddle.y - BALL_RADIUS - 2,
+        vx: 0,
+        vy: 0,
+        radius: BALL_RADIUS,
+        speed: LEVELS[currentLevelIndex % LEVELS.length].speed,
+        isFireball: false,
+        stuck: true,
+        trail: []
+      }];
+    }
+
+    function launchBall() {
+      const b = balls.find(ball => ball.stuck);
+      if (!b) return;
+      sound.playPaddleHit(0);
+      const angle = (Math.PI / 2) + (Math.random() * 0.4 - 0.2);
+      b.vx = Math.cos(angle) * b.speed;
+      b.vy = -Math.abs(Math.sin(angle) * b.speed);
+      b.stuck = false;
+      gameState = 'playing';
+    }
+
+    function startGame(stageIdx = 0) {
+      lives = 3;
+      score = (stageIdx === 0 ? 0 : score);
+      combo = 0;
+      maxCombo = 0;
+      screenMenu.style.display = 'none';
+      screenGame.style.display = 'flex';
+      document.getElementById('btn-back-menu').style.display = 'inline-flex';
+      initLevel(stageIdx);
+      gameState = 'ready';
+    }
+
+    function triggerBomb(block) {
+      sound.playBomb();
+      screenShake = 10;
+      const cx = block.x + block.width / 2;
+      const cy = block.y + block.height / 2;
+      spawnParticles(cx, cy, '#f43f5e', 30, true);
+
+      blocks.forEach(target => {
+        if (target.id === block.id) return;
+        const tcx = target.x + target.width / 2;
+        const tcy = target.y + target.height / 2;
+        if (Math.hypot(cx - tcx, cy - tcy) <= 95) {
+          damageBlock(target, 2, true);
+        }
+      });
+    }
+
+    function damageBlock(block, dmg = 1, isFromBomb = false) {
+      if (block.type === 'iron') {
+        sound.playWallHit();
+        block.hitFlash = 6;
+        return;
+      }
+      block.hp -= dmg;
+      block.hitFlash = 8;
+
+      if (block.hp <= 0) {
+        sound.playBlockDestroy();
+        spawnParticles(block.x + block.width / 2, block.y + block.height / 2, block.color, 12);
+
+        if (block.type === 'bomb') triggerBomb(block);
+        if (block.powerUpType) spawnPowerUp(block.x + block.width / 2 - 20, block.y, block.powerUpType);
+
+        if (!isFromBomb) combo++;
+        const curCombo = Math.max(1, combo);
+        const pts = block.points * curCombo;
+        score += pts;
+        maxCombo = Math.max(maxCombo, curCombo);
+        addFloatingText(block.x + block.width / 2, block.y, `+${pts}${curCombo > 1 ? ` (x${curCombo})` : ''}`, block.borderColor);
+
+        blocks = blocks.filter(b => b.id !== block.id);
+        remainingBreakable--;
+        updateHUD();
+
+        if (remainingBreakable <= 0) {
+          onStageClear();
+        }
+      } else {
+        sound.playBlockHit(combo);
+        spawnParticles(block.x + block.width / 2, block.y + block.height / 2, '#ffffff', 4);
+      }
+    }
+
+    function onStageClear() {
+      sound.playClear();
+      gameState = 'stage_clear';
+      // Confetti burst
+      for (let i = 0; i < 60; i++) {
+        spawnParticles(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2, ['#34d399', '#38bdf8', '#fbbf24', '#f43f5e'][i % 4], 1, true);
+      }
+      document.getElementById('clear-desc').innerText = `${LEVELS[currentLevelIndex].name} - ${LEVELS[currentLevelIndex].subTitle} をクリア！`;
+      document.getElementById('clear-score').innerText = score.toLocaleString();
+      document.getElementById('clear-combo').innerText = `x${maxCombo}`;
+      showModal('clear');
+    }
+
+    function onGameOver() {
+      sound.playOver();
+      gameState = 'game_over';
+      document.getElementById('over-score').innerText = score.toLocaleString();
+      document.getElementById('over-high').innerText = highScore.toLocaleString();
+      showModal('over');
+    }
+
+    function spawnPowerUp(x, y, type) {
+      const cfg = {
+        multiball: { color: '#8b5cf6', label: '+3 BALL' },
+        laser: { color: '#06b6d4', label: 'LASER' },
+        expand: { color: '#3b82f6', label: 'EXPAND' },
+        slow: { color: '#eab308', label: 'SLOW' },
+        fireball: { color: '#f97316', label: 'FIRE' },
+        shield: { color: '#10b981', label: 'SHIELD' },
+        life: { color: '#ec4899', label: '+1 LIFE' }
+      }[type];
+
+      powerUps.push({
+        x, y, vy: 2.4, width: 44, height: 20,
+        type, color: cfg.color, label: cfg.label
+      });
+    }
+
+    function collectPowerUp(pItem) {
+      sound.playPowerUp();
+      addFloatingText(pItem.x, pItem.y - 10, pItem.label, pItem.color);
+      spawnParticles(pItem.x + pItem.width / 2, pItem.y + pItem.height / 2, pItem.color, 14);
+      score += 150;
+      updateHUD();
+
+      switch(pItem.type) {
+        case 'multiball': {
+          if (balls.length > 0) {
+            const b = balls[0];
+            for (let i = 0; i < 2; i++) {
+              const ang = Math.atan2(b.vy, b.vx) + (i === 0 ? 0.45 : -0.45);
+              balls.push({
+                x: b.x, y: b.y,
+                vx: Math.cos(ang) * b.speed,
+                vy: Math.sin(ang) * b.speed,
+                radius: BALL_RADIUS, speed: b.speed,
+                isFireball: b.isFireball, stuck: false, trail: []
+              });
+            }
+          }
+          break;
+        }
+        case 'laser': paddle.laserTimer = 9000; break;
+        case 'expand':
+          paddle.expandTimer = 12000;
+          paddle.width = PADDLE_BASE_WIDTH * 1.45;
+          break;
+        case 'slow':
+          balls.forEach(b => {
+            b.speed = Math.max(4.5, b.speed * 0.75);
+            const m = Math.hypot(b.vx, b.vy);
+            if (m > 0) { b.vx = (b.vx / m) * b.speed; b.vy = (b.vy / m) * b.speed; }
+          });
+          break;
+        case 'fireball': balls.forEach(b => b.isFireball = true); break;
+        case 'shield': paddle.shieldActive = true; break;
+        case 'life':
+          lives = Math.min(5, lives + 1);
+          updateHUD();
+          break;
+      }
+    }
+
+    function fireLasers() {
+      if (paddle.laserTimer <= 0) return;
+      const now = performance.now();
+      if (now - paddle.lastLaserShot < 240) return;
+      paddle.lastLaserShot = now;
+
+      sound.playLaser();
+      screenShake = Math.max(screenShake, 1.5);
+      lasers.push(
+        { x: paddle.x + 8, y: paddle.y - 10, vy: -11, width: 4, height: 14 },
+        { x: paddle.x + paddle.width - 12, y: paddle.y - 10, vy: -11, width: 4, height: 14 }
+      );
+    }
+
+    function spawnParticles(x, y, color, count = 10, isBurst = false) {
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = isBurst ? Math.random() * 6 + 2 : Math.random() * 4 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          color,
+          size: Math.random() * 4 + 2,
+          alpha: 1,
+          life: 0,
+          maxLife: Math.random() * 20 + 15
+        });
+      }
+    }
+
+    function addFloatingText(x, y, text, color) {
+      floatingTexts.push({ x, y, vy: -1.2, text, color, alpha: 1 });
+    }
+
+    // Modal helpers
+    function showModal(name) {
+      modalBackdrop.style.display = 'flex';
+      modalPause.style.display = (name === 'pause' ? 'block' : 'none');
+      modalClear.style.display = (name === 'clear' ? 'block' : 'none');
+      modalOver.style.display = (name === 'over' ? 'block' : 'none');
+      modalHelp.style.display = (name === 'help' ? 'block' : 'none');
+      modalStage.style.display = (name === 'stage' ? 'block' : 'none');
+    }
+    function hideModals() {
+      modalBackdrop.style.display = 'none';
+      modalPause.style.display = 'none';
+      modalClear.style.display = 'none';
+      modalOver.style.display = 'none';
+      modalHelp.style.display = 'none';
+      modalStage.style.display = 'none';
+    }
+
+    // --- 6. EVENT LISTENERS ---
+    document.getElementById('btn-game-start').onclick = () => startGame(0);
+    document.getElementById('btn-stage-select-menu').onclick = () => showModal('stage');
+    document.getElementById('hud-stage-btn').onclick = () => showModal('stage');
+    document.getElementById('btn-open-help').onclick = () => showModal('help');
+    document.getElementById('btn-close-help').onclick = hideModals;
+    document.getElementById('btn-close-stage').onclick = hideModals;
+    document.getElementById('btn-back-menu').onclick = () => {
+      gameState = 'menu';
+      screenGame.style.display = 'none';
+      screenMenu.style.display = 'flex';
+      document.getElementById('btn-back-menu').style.display = 'none';
+    };
+
+    document.getElementById('btn-pause').onclick = () => {
+      if (gameState === 'playing') {
+        gameState = 'paused';
+        showModal('pause');
+      } else if (gameState === 'paused') {
+        gameState = 'playing';
+        hideModals();
+      }
+    };
+    document.getElementById('btn-resume').onclick = () => {
+      gameState = 'playing';
+      hideModals();
+    };
+    document.getElementById('btn-pause-restart').onclick = () => {
+      hideModals();
+      initLevel(currentLevelIndex);
+      gameState = 'ready';
+    };
+
+    document.getElementById('btn-sound').onclick = () => {
+      const isMuted = sound.toggleMute();
+      document.getElementById('btn-sound').innerText = isMuted ? '🔇' : '🔊';
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      initLevel(currentLevelIndex);
+      gameState = 'ready';
+    };
+
+    document.getElementById('btn-next-stage').onclick = () => {
+      hideModals();
+      const nextIdx = (currentLevelIndex + 1) % LEVELS.length;
+      score += 1000;
+      lives = Math.min(5, lives + 1);
+      initLevel(nextIdx);
+      gameState = 'ready';
+    };
+    document.getElementById('btn-clear-retry').onclick = () => {
+      hideModals();
+      initLevel(currentLevelIndex);
+      gameState = 'ready';
+    };
+    document.getElementById('btn-over-retry').onclick = () => {
+      hideModals();
+      startGame(currentLevelIndex);
+    };
+    document.getElementById('btn-over-menu').onclick = () => {
+      hideModals();
+      gameState = 'menu';
+      screenGame.style.display = 'none';
+      screenMenu.style.display = 'flex';
+      document.getElementById('btn-back-menu').style.display = 'none';
+    };
+
+    // Canvas Pointer Events
+    function updatePaddlePointer(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = VIRTUAL_WIDTH / rect.width;
+      const relX = (clientX - rect.left) * scale;
+      paddle.targetX = relX - paddle.width / 2;
+    }
+
+    canvas.addEventListener('mousemove', e => updatePaddlePointer(e.clientX));
+    canvas.addEventListener('mousedown', e => {
+      updatePaddlePointer(e.clientX);
+      if (gameState === 'ready') launchBall();
+      else if (gameState === 'playing' && paddle.laserTimer > 0) fireLasers();
+    });
+
+    canvas.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) updatePaddlePointer(e.touches[0].clientX);
+    }, { passive: true });
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length > 0) {
+        updatePaddlePointer(e.touches[0].clientX);
+        if (gameState === 'ready') launchBall();
+        else if (gameState === 'playing' && paddle.laserTimer > 0) fireLasers();
+      }
+    }, { passive: true });
+
+    // Keyboard events
+    window.addEventListener('keydown', e => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+      else if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+      else if (e.code === 'Space') {
+        keys.fire = true;
+        if (gameState === 'ready') launchBall();
+        else if (gameState === 'playing' && paddle.laserTimer > 0) fireLasers();
+      }
+      else if (e.code === 'KeyP') {
+        if (gameState === 'playing') { gameState = 'paused'; showModal('pause'); }
+        else if (gameState === 'paused') { gameState = 'playing'; hideModals(); }
+      }
+      else if (e.code === 'KeyM') {
+        const isMuted = sound.toggleMute();
+        document.getElementById('btn-sound').innerText = isMuted ? '🔇' : '🔊';
+      }
+      else if (e.code === 'KeyR' && (gameState === 'playing' || gameState === 'paused')) {
+        hideModals();
+        initLevel(currentLevelIndex);
+        gameState = 'ready';
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+      else if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+      else if (e.code === 'Space') keys.fire = false;
+    });
+
+    // --- 7. MAIN GAME LOOP ---
+    let lastTime = performance.now();
+
+    function loop(currentTime) {
+      const dt = Math.min(32, currentTime - lastTime);
+      lastTime = currentTime;
+
+      // 1. Paddle movement
+      if (keys.left) paddle.targetX -= paddle.speed * (dt / 16);
+      if (keys.right) paddle.targetX += paddle.speed * (dt / 16);
+      if (keys.fire && paddle.laserTimer > 0) fireLasers();
+
+      paddle.x += (paddle.targetX - paddle.x) * 0.35;
+      paddle.x = Math.max(0, Math.min(VIRTUAL_WIDTH - paddle.width, paddle.x));
+      paddle.targetX = Math.max(0, Math.min(VIRTUAL_WIDTH - paddle.width, paddle.targetX));
+
+      if (gameState === 'playing') {
+        if (paddle.laserTimer > 0) paddle.laserTimer = Math.max(0, paddle.laserTimer - dt);
+        if (paddle.expandTimer > 0) {
+          paddle.expandTimer = Math.max(0, paddle.expandTimer - dt);
+          if (paddle.expandTimer === 0) paddle.width = PADDLE_BASE_WIDTH;
+        }
+      }
+
+      // 2. Ball movement & physics
+      if (gameState === 'playing' || gameState === 'ready') {
+        const activeBalls = [];
+
+        balls.forEach(b => {
+          if (b.stuck) {
+            b.x = paddle.x + paddle.width / 2;
+            b.y = paddle.y - b.radius - 2;
+            activeBalls.push(b);
+            return;
+          }
+
+          if (gameState === 'playing') {
+            b.trail.unshift({ x: b.x, y: b.y, alpha: 0.6 });
+            if (b.trail.length > 7) b.trail.pop();
+            b.trail.forEach(t => t.alpha *= 0.72);
+
+            const subSteps = 2;
+            const svx = (b.vx * (dt / 16)) / subSteps;
+            const svy = (b.vy * (dt / 16)) / subSteps;
+
+            for (let s = 0; s < subSteps; s++) {
+              b.x += svx;
+              b.y += svy;
+
+              // Walls
+              if (b.x - b.radius <= 0) {
+                b.x = b.radius; b.vx = Math.abs(b.vx);
+                sound.playWallHit();
+                spawnParticles(b.x, b.y, '#94a3b8', 3);
+              } else if (b.x + b.radius >= VIRTUAL_WIDTH) {
+                b.x = VIRTUAL_WIDTH - b.radius; b.vx = -Math.abs(b.vx);
+                sound.playWallHit();
+                spawnParticles(b.x, b.y, '#94a3b8', 3);
+              }
+              if (b.y - b.radius <= 0) {
+                b.y = b.radius; b.vy = Math.abs(b.vy);
+                sound.playWallHit();
+                spawnParticles(b.x, b.y, '#94a3b8', 3);
+              }
+
+              // Paddle
+              if (
+                b.vy > 0 &&
+                b.y + b.radius >= paddle.y &&
+                b.y - b.radius <= paddle.y + paddle.height &&
+                b.x + b.radius >= paddle.x &&
+                b.x - b.radius <= paddle.x + paddle.width
+              ) {
+                b.y = paddle.y - b.radius - 1;
+                const offset = (b.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                const clamped = Math.max(-0.95, Math.min(0.95, offset));
+                const angle = clamped * (Math.PI * 0.38);
+                const spd = Math.max(b.speed, Math.hypot(b.vx, b.vy));
+                b.vx = Math.sin(angle) * spd;
+                b.vy = -Math.abs(Math.cos(angle) * spd);
+
+                sound.playPaddleHit(clamped);
+                spawnParticles(b.x, b.y, '#38bdf8', 6);
+                combo = 0;
+                updateHUD();
+              }
+
+              // Shield
+              if (paddle.shieldActive && b.y + b.radius >= VIRTUAL_HEIGHT - 12 && b.vy > 0) {
+                b.vy = -Math.abs(b.vy);
+                paddle.shieldActive = false;
+                sound.playShield();
+                screenShake = 4;
+                addFloatingText(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT - 30, 'SHIELD SAVED!', '#10b981');
+                spawnParticles(b.x, VIRTUAL_HEIGHT - 12, '#10b981', 18);
+              }
+
+              // Blocks
+              for (let i = 0; i < blocks.length; i++) {
+                const bk = blocks[i];
+                if (
+                  b.x + b.radius >= bk.x &&
+                  b.x - b.radius <= bk.x + bk.width &&
+                  b.y + b.radius >= bk.y &&
+                  b.y - b.radius <= bk.y + bk.height
+                ) {
+                  if (!b.isFireball || bk.type === 'iron') {
+                    const ol = (b.x + b.radius) - bk.x;
+                    const or = (bk.x + bk.width) - (b.x - b.radius);
+                    const ot = (b.y + b.radius) - bk.y;
+                    const ob = (bk.y + bk.height) - (b.y - b.radius);
+                    const min = Math.min(ol, or, ot, ob);
+
+                    if (min === ol) { b.vx = -Math.abs(b.vx); b.x = bk.x - b.radius; }
+                    else if (min === or) { b.vx = Math.abs(b.vx); b.x = bk.x + bk.width + b.radius; }
+                    else if (min === ot) { b.vy = -Math.abs(b.vy); b.y = bk.y - b.radius; }
+                    else { b.vy = Math.abs(b.vy); b.y = bk.y + bk.height + b.radius; }
+                  }
+                  damageBlock(bk, 1, false);
+                  break;
+                }
+              }
+            }
+
+            if (b.y - b.radius <= VIRTUAL_HEIGHT + 20) activeBalls.push(b);
+          }
+        });
+
+        balls = activeBalls;
+
+        if (activeBalls.length === 0 && gameState === 'playing') {
+          lives--;
+          combo = 0;
+          updateHUD();
+          if (lives <= 0) {
+            onGameOver();
+          } else {
+            gameState = 'ready';
+            resetBallToPaddle();
+          }
+        }
+      }
+
+      // 3. Lasers
+      if (gameState === 'playing') {
+        const remainingLasers = [];
+        lasers.forEach(laser => {
+          laser.y += laser.vy;
+          let hit = false;
+          for (let i = 0; i < blocks.length; i++) {
+            const bk = blocks[i];
+            if (laser.x >= bk.x && laser.x <= bk.x + bk.width && laser.y <= bk.y + bk.height && laser.y >= bk.y) {
+              hit = true;
+              spawnParticles(laser.x, laser.y, '#06b6d4', 4);
+              damageBlock(bk, 1, true);
+              break;
+            }
+          }
+          if (!hit && laser.y > -20) remainingLasers.push(laser);
+        });
+        lasers = remainingLasers;
+
+        // 4. Power-ups
+        const remainingPups = [];
+        powerUps.forEach(pu => {
+          pu.y += pu.vy;
+          if (
+            pu.y + pu.height >= paddle.y &&
+            pu.y <= paddle.y + paddle.height &&
+            pu.x + pu.width >= paddle.x &&
+            pu.x <= paddle.x + paddle.width
+          ) {
+            collectPowerUp(pu);
+          } else if (pu.y < VIRTUAL_HEIGHT + 30) {
+            remainingPups.push(pu);
+          }
+        });
+        powerUps = remainingPups;
+      }
+
+      // 5. Particles & Texts
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.life++;
+        p.alpha = Math.max(0, 1 - p.life / p.maxLife);
+      });
+      particles = particles.filter(p => p.life < p.maxLife);
+
+      floatingTexts.forEach(ft => {
+        ft.y += ft.vy;
+        ft.alpha = Math.max(0, ft.alpha - 0.024);
+      });
+      floatingTexts = floatingTexts.filter(ft => ft.alpha > 0);
+
+      if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.6);
+
+      // 6. Draw Frame
+      ctx.save();
+      if (screenShake > 0) {
+        ctx.translate((Math.random() * 2 - 1) * screenShake, (Math.random() * 2 - 1) * screenShake);
+      }
+
+      // BG
+      ctx.fillStyle = '#060a12';
+      ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+      // Grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < VIRTUAL_WIDTH; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, VIRTUAL_HEIGHT); ctx.stroke();
+      }
+      for (let y = 0; y < VIRTUAL_HEIGHT; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VIRTUAL_WIDTH, y); ctx.stroke();
+      }
+
+      // Shield
+      if (paddle.shieldActive) {
+        ctx.save();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(10, VIRTUAL_HEIGHT - 12);
+        ctx.lineTo(VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 12);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Blocks
+      blocks.forEach(bk => {
+        ctx.save();
+        ctx.fillStyle = bk.hitFlash ? '#ffffff' : bk.color;
+        if (bk.hitFlash) bk.hitFlash--;
+        ctx.strokeStyle = bk.borderColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bk.x, bk.y, bk.width, bk.height, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(bk.x + 2, bk.y + 2, bk.width - 4, 3);
+
+        if (bk.type === 'bomb') {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('💣', bk.x + bk.width / 2, bk.y + bk.height / 2);
+        } else if (bk.type === 'iron') {
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('///', bk.x + bk.width / 2, bk.y + bk.height / 2);
+        } else if (bk.type === 'tough' && bk.hp < bk.maxHp) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(bk.x + 8, bk.y + 4);
+          ctx.lineTo(bk.x + bk.width / 2, bk.y + bk.height - 4);
+          ctx.stroke();
+        } else if (bk.powerUpType) {
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('★', bk.x + bk.width / 2, bk.y + bk.height / 2);
+        }
+        ctx.restore();
+      });
+
+      // Power-ups
+      powerUps.forEach(pu => {
+        ctx.save();
+        ctx.fillStyle = pu.color;
+        ctx.beginPath();
+        ctx.roundRect(pu.x, pu.y, pu.width, pu.height, 5);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(pu.label, pu.x + pu.width / 2, pu.y + pu.height / 2);
+        ctx.restore();
+      });
+
+      // Lasers
+      lasers.forEach(l => {
+        ctx.fillStyle = '#22d3ee';
+        ctx.fillRect(l.x, l.y, l.width, l.height);
+      });
+
+      // Paddle
+      ctx.save();
+      const pgrad = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
+      pgrad.addColorStop(0, '#e2e8f0');
+      pgrad.addColorStop(1, '#94a3b8');
+      ctx.fillStyle = pgrad;
+      ctx.beginPath();
+      ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
+      ctx.fill();
+
+      ctx.fillStyle = paddle.laserTimer > 0 ? '#06b6d4' : '#38bdf8';
+      ctx.fillRect(paddle.x + 8, paddle.y + paddle.height / 2 - 2, paddle.width - 16, 4);
+
+      if (paddle.laserTimer > 0) {
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(paddle.x + 4, paddle.y - 6, 8, 6);
+        ctx.fillRect(paddle.x + paddle.width - 12, paddle.y - 6, 8, 6);
+      }
+      ctx.restore();
+
+      // Balls
+      balls.forEach(b => {
+        b.trail.forEach(t => {
+          ctx.save();
+          ctx.fillStyle = b.isFireball ? `rgba(249, 115, 22, ${t.alpha * 0.8})` : `rgba(56, 189, 248, ${t.alpha * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, b.radius * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        ctx.save();
+        ctx.fillStyle = b.isFireball ? '#fed7aa' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+        if (b.isFireball) {
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.radius * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // Particles
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Floating Texts
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 14px "Chakra Petch", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+
+      // Ready Prompt
+      if (gameState === 'ready') {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 18px "Noto Sans JP", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('クリック または スペースキー で発射！', VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT / 2 + 60);
+        ctx.restore();
+      }
+
+      ctx.restore();
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
